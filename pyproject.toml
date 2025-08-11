@@ -1,8 +1,6 @@
 [project]
 name = "business_app"
-authors = [
-    { name = "Me", email = "hurrdurrrderp@gmail.com"}
-]
+authors = [{ name = "Me", email = "hurrdurrrderp@gmail.com" }]
 description = "Find Businesses"
 requires-python = ">=3.10"
 readme = "README.md"
@@ -24,15 +22,7 @@ line-length = 110
 target-version = "py310"
 
 [tool.ruff.lint]
-select = [
-    "F",
-    "E",
-    "W",
-    "I",
-    "UP",
-    "B",
-    "RUF",
-]
+select = ["F", "E", "W", "I", "UP", "B", "RUF"]
 ignore = [
     "B017", # assertRaises(Exception) - should be more specific
     "B018", # useless expression, not assigned to anything
@@ -50,7 +40,10 @@ ignore = [
 ]
 typing-modules = ["frappe.types.DF"]
 
+[tool.ruff.lint.isort]
+known-first-party = ["business_app"]
+combine-as-imports = true
+
 [tool.ruff.format]
 quote-style = "double"
-indent-style = "tab"
 docstring-code-format = true
