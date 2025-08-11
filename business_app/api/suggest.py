@@ -3,28 +3,13 @@ from __future__ import annotations
 import logging
 
 import frappe
-from dadata import Dadata
 from frappe.rate_limiter import rate_limit
 from httpx import HTTPStatusError
 
+from business_app.clients import get_dadata
+
 logger = logging.getLogger("api.suggest")
-if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
-    sh = logging.StreamHandler()  # goes to bench start console
-    sh.setFormatter(logging.Formatter("[%(levelname)s] %(name)s: %(message)s"))
-    logger.addHandler(sh)
-
 logger.setLevel(logging.DEBUG if frappe.conf.get("developer_mode") else logging.INFO)
-
-
-def create_dadata_client() -> Dadata | None:
-    token = frappe.conf.get("dadata_token")
-    if not token:
-        frappe.log_error("DaData credentials are not configured on this site.")
-        return None
-    return Dadata(token)  # type: ignore
-
-
-dadata = create_dadata_client()
 
 
 @frappe.whitelist()
@@ -56,7 +41,7 @@ def by_name(query: str) -> dict[str, list[dict[str, str]]]:
 
 
 def suggest(query: str) -> dict[str, list[dict[str, str]]]:
-    if not dadata:
+    if (dadata := get_dadata()) is None:
         return {"suggestions": []}
     query = (query or "").strip()
     if not query:
