@@ -14,7 +14,7 @@ logger.setLevel(logging.DEBUG if frappe.conf.get("developer_mode") else logging.
 
 @frappe.whitelist()
 @rate_limit(limit=60, seconds=60)
-def find_by_id(query: str, kpp: str) -> dict[str, str | None | bool]:
+def find_by_id(query: str, kpp: str | None = None) -> dict[str, str | None | bool]:
     """
     Proxy to DaData clean address API.
     Returns: {"suggestions": [{"name": ..., "inn": ..., "kpp": ...}, ...]}
@@ -31,7 +31,9 @@ def find_by_id(query: str, kpp: str) -> dict[str, str | None | bool]:
 
     was_searched_without_kpp = False
     try:
-        response = dadata.find_by_id("party", query, kpp=kpp)
+        response = None
+        if kpp:
+            response = dadata.find_by_id("party", query, kpp=kpp)
         if not response:
             was_searched_without_kpp = True
             response = dadata.find_by_id("party", query, branch_type="MAIN")
