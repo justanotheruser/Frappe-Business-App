@@ -13,8 +13,7 @@ if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
     sh.setFormatter(logging.Formatter("[%(levelname)s] %(name)s: %(message)s"))
     logger.addHandler(sh)
 
-logger.setLevel(logging.DEBUG if frappe.conf.get(
-    "developer_mode") else logging.INFO)
+logger.setLevel(logging.DEBUG if frappe.conf.get("developer_mode") else logging.INFO)
 
 
 def create_dadata_client() -> Dadata | None:
@@ -33,7 +32,7 @@ dadata = create_dadata_client()
 def by_inn(query: str) -> dict[str, list[dict[str, str]]]:
     """
     Proxy to DaData clean address API.
-    Returns: {"hints": [{"name": ..., "inn": ..., "kpp": ...}, ...]}
+    Returns: {"suggestions": [{"name": ..., "inn": ..., "kpp": ...}, ...]}
 
     Called from browser via:
         /api/method/business_app.api.suggest.by_inn
@@ -47,7 +46,7 @@ def by_inn(query: str) -> dict[str, list[dict[str, str]]]:
 def by_name(query: str) -> dict[str, list[dict[str, str]]]:
     """
     Proxy to DaData clean address API.
-    Returns: {"hints": [{"name": ..., "inn": ..., "kpp": ...}, ...]}
+    Returns: {"suggestions": [{"name": ..., "inn": ..., "kpp": ...}, ...]}
 
     Called from browser via:
         /api/method/business_app.api.suggest.by_name
@@ -58,29 +57,28 @@ def by_name(query: str) -> dict[str, list[dict[str, str]]]:
 
 def suggest(query: str) -> dict[str, list[dict[str, str]]]:
     if not dadata:
-        return {"hints": []}
+        return {"suggestions": []}
     query = (query or "").strip()
     if not query:
-        return {"hints": []}
+        return {"suggestions": []}
 
     try:
-        suggestions = dadata.suggest("party", query)
+        response = dadata.suggest("party", query)
     except HTTPStatusError:
         logger.error(frappe.get_traceback(), "DaData API error")
-        # Fail soft: no hints, UI keeps working
-        return {"hints": []}
+        # Fail soft: no suggestions, UI keeps working
+        return {"suggestions": []}
 
-    hints: list[dict[str, str]] = []
-    for item in suggestions:
+    suggestions: list[dict[str, str]] = []
+    for item in response:
         name = item.get("value")
         inn = item.get("data", {}).get("inn")
         kpp = item.get("data", {}).get("kpp")
         if name and inn and kpp:
-            hints.append({"name": name, "inn": inn, "kpp": kpp})
+            suggestions.append({"name": name, "inn": inn, "kpp": kpp})
         else:
-            logger.warning(
-                f"Some values are missing from suggestion: {query=}, {name=}, {inn=}, {kpp=}")
-        if len(hints) >= 10:
+            logger.warning(f"Some values are missing from suggestion: {query=}, {name=}, {inn=}, {kpp=}")
+        if len(suggestions) >= 10:
             break
 
-    return {"hints": hints}
+    return {"suggestions": suggestions}
